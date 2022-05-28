@@ -3,6 +3,8 @@ package viewers;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -23,7 +25,7 @@ import models.Manutencao;
 
 public class ManutencaoForm extends JFrame implements ActionListener {
 
-	private static final long serialVersionUID = 2L;
+	private static final long serialVersionUID = 3L;
 	private JPanel painel;
 	private String imgIco = "./imgs/icone.png";
 	private JLabel id, data, equipamento, custoHora, tempoGasto;
@@ -34,7 +36,7 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 	private DefaultTableModel tableModel;
 	private JButton create, read, update, delete;
 
-	private int autoId = ManutencaoProcess.manutencoes.get(ManutencaoProcess.manutencoes.size()-1).getId()+1;
+	private int autoId = ManutencaoProcess.manutencoes.get(ManutencaoProcess.manutencoes.size() - 1).getId() + 1;
 	private SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 
 	ManutencaoForm() {
@@ -81,7 +83,7 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 		painel.add(tfTempoGasto);
 
 		create = new JButton("Cadastrar");
-		read = new JButton("Buscar por id");
+		read = new JButton("Filtrar");
 		update = new JButton("Alterar");
 		delete = new JButton("Excluir");
 
@@ -116,7 +118,16 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 		update.addActionListener(this);
 		delete.addActionListener(this);
 
-		table.setEnabled(false);
+		table.addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent e) {
+				int lin = table.getSelectedRow();
+				int id = Integer.parseInt(table.getValueAt(lin, 0).toString());
+				Manutencao manutencao = new Manutencao(id);
+				int indice = ManutencaoProcess.manutencoes.indexOf(manutencao);
+				preencheCampos(indice);
+			}
+		});
+
 		tfId.setEnabled(false);
 		tfData.setEnabled(false);
 		update.setEnabled(false);
@@ -136,6 +147,20 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 		}
 	}
 
+	private void preencherTabela(String filtro) {
+		int totLinhas = tableModel.getRowCount();
+		if (tableModel.getRowCount() > 0) {
+			for (int i = 0; i < totLinhas; i++) {
+				tableModel.removeRow(0);
+			}
+		}
+		for (Manutencao m : ManutencaoProcess.manutencoes) {
+			if (m.getEquipamento().toUpperCase().contains(filtro.toUpperCase()) || m.getData("").contains(filtro)) {
+				tableModel.addRow(m.toVetor());
+			}
+		}
+	}
+
 	private void limparCampos() {
 		tfId.setText(String.format("%d", autoId));
 		tfCustoHora.setText("100,00");
@@ -144,6 +169,19 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 		create.setEnabled(true);
 		update.setEnabled(false);
 		delete.setEnabled(false);
+	}
+
+	private void preencheCampos(int indice) {
+		tfId.setText(ManutencaoProcess.manutencoes.get(indice).getId("s"));
+		tfData.setText(ManutencaoProcess.manutencoes.get(indice).getData("s"));
+		cbEquipamento
+				.setSelectedIndex(obterIndiceEquipamento(ManutencaoProcess.manutencoes.get(indice).getEquipamento()));
+		tfCustoHora.setText(ManutencaoProcess.manutencoes.get(indice).getCustoHora("s"));
+		tfTempoGasto.setText(ManutencaoProcess.manutencoes.get(indice).getTempoGasto("s"));
+		create.setEnabled(false);
+		update.setEnabled(true);
+		delete.setEnabled(true);
+		tfData.setEnabled(true);
 	}
 
 	private int obterIndiceEquipamento(String equipamento) {
@@ -164,7 +202,7 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 			return -1;
 		}
 	}
-	
+
 	// CREATE - CRUD
 	private void cadastrar() {
 		if (tfCustoHora.getText().length() != 0 && tfTempoGasto.getText().length() != 0) {
@@ -181,45 +219,41 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 
 	// READ - CRUD
 	private void buscar() {
-		String entrada = JOptionPane.showInputDialog(this, "Digite o Id da manutenção:");
+		String entrada = JOptionPane.showInputDialog(this, "Digite o Id ou Equipamento ou data da manutenção:");
 		boolean isNumeric = true;
 		if (entrada != null && !entrada.equals("")) {
 			for (int i = 0; i < entrada.length(); i++) {
 				if (!Character.isDigit(entrada.charAt(i))) {
 					isNumeric = false;
+					limparCampos();
 				}
 			}
 		} else {
 			isNumeric = false;
+			limparCampos();
 		}
 		if (isNumeric) {
 			int id = Integer.parseInt(entrada);
 			Manutencao manutencao = new Manutencao(id);
 			if (ManutencaoProcess.manutencoes.contains(manutencao)) {
 				int indice = ManutencaoProcess.manutencoes.indexOf(manutencao);
-				tfId.setText(ManutencaoProcess.manutencoes.get(indice).getId("s"));
-				tfData.setText(ManutencaoProcess.manutencoes.get(indice).getData("s"));
-				cbEquipamento.setSelectedIndex(obterIndiceEquipamento(ManutencaoProcess.manutencoes.get(indice).getEquipamento()));
-				tfCustoHora.setText(ManutencaoProcess.manutencoes.get(indice).getCustoHora("s"));
-				tfTempoGasto.setText(ManutencaoProcess.manutencoes.get(indice).getTempoGasto("s"));
-				create.setEnabled(false);
-				update.setEnabled(true);
-				delete.setEnabled(true);
-				tfData.setEnabled(true);
-				ManutencaoProcess.salvar();
+				preencheCampos(indice);
+				preencherTabela();
 			} else {
 				JOptionPane.showMessageDialog(this, "Equipamento não encontrado");
 			}
+		} else {
+			preencherTabela(entrada);
 		}
 	}
-	
+
 	// UPDATE - CRUD
 	private void alterar() {
 		if (tfCustoHora.getText().length() != 0 && tfTempoGasto.getText().length() != 0) {
 			int id = Integer.parseInt(tfId.getText());
 			Manutencao manutencao = new Manutencao(id);
 			int indice = ManutencaoProcess.manutencoes.indexOf(manutencao);
-			ManutencaoProcess.manutencoes.set(indice,new Manutencao(tfId.getText(),tfData.getText(),
+			ManutencaoProcess.manutencoes.set(indice, new Manutencao(tfId.getText(), tfData.getText(),
 					cbEquipamento.getSelectedItem().toString(), tfCustoHora.getText(), tfTempoGasto.getText()));
 			autoId++;
 			preencherTabela();
@@ -230,7 +264,6 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 		}
 	}
 
-	
 	// DELETE - CRUD
 	private void excluir() {
 		int id = Integer.parseInt(tfId.getText());

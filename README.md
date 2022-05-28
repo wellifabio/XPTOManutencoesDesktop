@@ -12,5 +12,5 @@
 - Projeto desenvolvido em aulas de POO no SENAI Jaguariúna.
 - Além dos conhecimentos listados acima, também estudamos versionamento com Git
 	- Commit 1: GUI listando com JTextArea
-	- Commit 2: GUI listando com JTable estática
-	- Commit 3: GUI listando com JTable dinâmica
+	- Commit 2: GUI listando com JTable estatica
+	- Commit 3: GUI listando com JTable dinamica
