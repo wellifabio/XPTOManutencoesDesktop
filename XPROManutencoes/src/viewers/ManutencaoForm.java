@@ -14,25 +14,26 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
+import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.table.DefaultTableModel;
 
 import controllers.ManutencaoProcess;
 import models.Manutencao;
 
 public class ManutencaoForm extends JFrame implements ActionListener {
 
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
 	private JPanel painel;
 	private String imgIco = "./imgs/icone.png";
 	private JLabel id, data, equipamento, custoHora, tempoGasto;
 	private JTextField tfId, tfData, tfCustoHora, tfTempoGasto;
 	private JComboBox<String> cbEquipamento;
 	private JScrollPane rolagem;
-	private JTextArea text;
-	private String dados;
+	private JTable table;
+	private DefaultTableModel tableModel;
 	private JButton create, read, update, delete;
-	
+
 	private int autoId = ManutencaoProcess.manutencoes.get(ManutencaoProcess.manutencoes.size()-1).getId()+1;
 	private SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 
@@ -94,11 +95,19 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 		painel.add(update);
 		painel.add(delete);
 
-		text = new JTextArea();
+		table = new JTable();
+		tableModel = new DefaultTableModel();
+		tableModel.addColumn("Id");
+		tableModel.addColumn("Data");
+		tableModel.addColumn("Equipamento");
+		tableModel.addColumn("Custo/Hora");
+		tableModel.addColumn("Tempo Gasto");
+		tableModel.addColumn("Total");
 		if (ManutencaoProcess.manutencoes.size() != 0) {
-			preencherDados();
+			preencherTabela();
 		}
-		rolagem = new JScrollPane(text);
+		table = new JTable(tableModel);
+		rolagem = new JScrollPane(table);
 		rolagem.setBounds(10, 165, 600, 260);
 		painel.add(rolagem);
 
@@ -107,7 +116,7 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 		update.addActionListener(this);
 		delete.addActionListener(this);
 
-		text.setEnabled(false);
+		table.setEnabled(false);
 		tfId.setEnabled(false);
 		tfData.setEnabled(false);
 		update.setEnabled(false);
@@ -115,13 +124,16 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 
 	}
 
-	private void preencherDados() {
-		dados = "Id\tData\tEquipamento\t\tCusto/Hora\tTempo Gasto\tTotal\n";
-		for (Manutencao m : ManutencaoProcess.manutencoes) {
-			dados += m.toString();
+	private void preencherTabela() {
+		int totLinhas = tableModel.getRowCount();
+		if (tableModel.getRowCount() > 0) {
+			for (int i = 0; i < totLinhas; i++) {
+				tableModel.removeRow(0);
+			}
 		}
-		text.setText(dados);
-		text.setBackground(new Color(13, 33, 55));
+		for (Manutencao m : ManutencaoProcess.manutencoes) {
+			tableModel.addRow(m.toVetor());
+		}
 	}
 
 	private void limparCampos() {
@@ -159,7 +171,7 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 			ManutencaoProcess.manutencoes.add(new Manutencao(tfId.getText(),
 					cbEquipamento.getSelectedItem().toString(), tfCustoHora.getText(), tfTempoGasto.getText()));
 			autoId++;
-			preencherDados();
+			preencherTabela();
 			limparCampos();
 			ManutencaoProcess.salvar();
 		} else {
@@ -210,7 +222,7 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 			ManutencaoProcess.manutencoes.set(indice,new Manutencao(tfId.getText(),tfData.getText(),
 					cbEquipamento.getSelectedItem().toString(), tfCustoHora.getText(), tfTempoGasto.getText()));
 			autoId++;
-			preencherDados();
+			preencherTabela();
 			limparCampos();
 			ManutencaoProcess.salvar();
 		} else {
@@ -225,7 +237,7 @@ public class ManutencaoForm extends JFrame implements ActionListener {
 		Manutencao manutencao = new Manutencao(id);
 		int indice = ManutencaoProcess.manutencoes.indexOf(manutencao);
 		ManutencaoProcess.manutencoes.remove(indice);
-		preencherDados();
+		preencherTabela();
 		limparCampos();
 		create.setEnabled(true);
 		update.setEnabled(false);
